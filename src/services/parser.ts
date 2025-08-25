@@ -456,7 +456,7 @@ export class Parser {
   }
 
   private parseLine(str: string, vaultName: string) {
-    return this.htmlConverter.makeHtml(
+    const html = this.htmlConverter.makeHtml(
       this.mathToAnki(
         this.substituteObsidianLinks(
           this.substituteImageLinks(this.substituteAudioLinks(str)),
@@ -464,6 +464,9 @@ export class Parser {
         )
       )
     );
+    
+    // Normalize HTML to match Anki's format - convert self-closing tags to standard format
+    return html.replace(/<br\s*\/?>/gi, '<br>');
   }
 
   private getImageLinks(str: string) {

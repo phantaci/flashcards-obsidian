@@ -1,45 +1,61 @@
 import typescript from '@rollup/plugin-typescript';
-import {nodeResolve} from '@rollup/plugin-node-resolve';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const commonPlugins = [
+  typescript({
+    tsconfig: './tsconfig.json',
+    sourceMap: true,
+    inlineSources: true,
+  }),
+  nodeResolve({
+    browser: true,
+    preferBuiltins: false,
+  }),
+  commonjs({
+    sourceMap: true,
+  }),
+];
 
 const PRODUCTION_PLUGIN_CONFIG = {
   input: 'main.ts',
   output: {
     dir: '.',
-    sourcemap: 'inline',
+    sourcemap: true,
     sourcemapExcludeSources: true,
     format: 'cjs',
-    exports: 'default'
+    exports: 'auto',
+    chunkFileNames: '[name].js',
+    entryFileNames: 'main.js',
+    manualChunks: undefined,
   },
   external: ['obsidian'],
-  plugins: [
-    typescript(),
-    nodeResolve({browser: true}),
-    commonjs(),
-  ]
+  plugins: commonPlugins,
+  onwarn(warning, warn) {
+    if (warning.code === 'CIRCULAR_DEPENDENCY') return;
+    warn(warning);
+  },
 };
 
 const DEV_PLUGIN_CONFIG = {
-  input: 'main.ts',
+  ...PRODUCTION_PLUGIN_CONFIG,
   output: {
+    ...PRODUCTION_PLUGIN_CONFIG.output,
     dir: 'docs/test-vault/.obsidian/plugins/flashcards-obsidian/',
-    sourcemap: 'inline',
-    format: 'cjs',
-    exports: 'default'
   },
-  external: ['obsidian'],
-  plugins: [
-    typescript(),
-    nodeResolve({browser: true}),
-    commonjs(),
-  ]
+  watch: {
+    include: '**/*.ts',
+    exclude: 'node_modules/**',
+  },
 };
 
-let configs = []
+const configs = [];
 
-if (process.env.BUILD === "dev") {
-  configs.push(DEV_PLUGIN_CONFIG);
-} else if (process.env.BUILD === "production" ) {
+if (process.env.BUILD === 'production') {
   configs.push(PRODUCTION_PLUGIN_CONFIG);
 } else {
   configs.push(DEV_PLUGIN_CONFIG);

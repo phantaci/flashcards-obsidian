@@ -1,0 +1,135 @@
+{
+  "main": {
+    "id": "c266a5597ba40dd2",
+    "type": "split",
+    "children": [
+      {
+        "id": "62fd8f95dbb93a70",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "089528d822d1943e",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "000 Main.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "000 Main"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "80df9cdbd32d9026",
+    "type": "split",
+    "children": [
+      {
+        "id": "8dacb92c339f8643",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "e0ea81c716773610",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "c33925e6656aee15",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "bb8e177391e9a441",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "31abaddc9769cc1f",
+    "type": "split",
+    "children": [
+      {
+        "id": "1b0982837f5ab035",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "eb8fa369468aea08",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Cloze.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Cloze 的反向链接列表"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "flashcards-obsidian:Generate flashcards": false,
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "command-palette:打开命令面板": false,
+      "markdown-importer:打开 Markdown 格式转换器": false,
+      "bases:创建新数据库": false
+    }
+  },
+  "active": "089528d822d1943e",
+  "lastOpenFiles": [
+    "Cloze.md",
+    "000 Main.md",
+    "Pasted image 20250825173906.png",
+    "Inline.md"
+  ]
+}

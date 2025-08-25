@@ -1,13 +1,13 @@
 import { addIcon, Notice, Plugin, TFile } from 'obsidian';
-import { ISettings } from 'src/conf/settings';
-import { SettingsTab } from 'src/gui/settings-tab';
-import { CardsService } from 'src/services/cards';
-import { Anki } from 'src/services/anki';
-import { noticeTimeout, flashcardsIcon } from 'src/conf/constants';
+import { ISettings } from './src/conf/settings';
+import { SettingsTab } from './src/gui/settings-tab';
+import { CardsService } from './src/services/cards';
+import { Anki } from './src/services/anki';
+import { noticeTimeout, flashcardsIcon } from './src/conf/constants';
 
 export default class ObsidianFlashcard extends Plugin {
-	private settings: ISettings
-	private cardsService: CardsService
+	private settings!: ISettings
+	private cardsService!: CardsService
 
 	async onload() {
 		addIcon("flashcards", flashcardsIcon)
@@ -59,13 +59,14 @@ export default class ObsidianFlashcard extends Plugin {
 	}
 
 	private generateCards(activeFile: TFile) {
-		this.cardsService.execute(activeFile).then(res => {
+		this.cardsService.execute(activeFile).then((res: string[]) => {
 			for (const r of res) {
 				new Notice(r, noticeTimeout)
 			}
 			console.log(res)
-		}).catch(err => {
-			Error(err)
+		}).catch((err: any) => {
+			console.error(err)
+			new Notice('Error generating cards: ' + err.message, noticeTimeout)
 		})
 	}
 }

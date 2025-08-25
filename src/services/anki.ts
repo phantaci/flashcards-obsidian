@@ -96,7 +96,7 @@ export class Anki {
    * @param cards the new cards.
    * @param deckName the new deck name.
    */
-  public async updateCards(cards: Card[]): Promise<any> {
+  public async updateCards(cards: Card[]): Promise<number[]> {
     let updateActions: any[] = [];
 
     // Unfortunately https://github.com/FooSoft/anki-connect/issues/183
@@ -128,11 +128,20 @@ export class Anki {
       },
     });
 
-    return this.invoke("multi", 6, { actions: updateActions });
+    await this.invoke("multi", 6, { actions: updateActions });
+    return ids; // Return the actual card IDs that were updated
   }
 
   public async changeDeck(ids: number[], deckName: string) {
     return await this.invoke("changeDeck", 6, { cards: ids, deck: deckName });
+  }
+
+  public async getCardsFromDeck(deckName: string) {
+    const noteIds = await this.invoke("findNotes", 6, { query: `deck:"${deckName}"` });
+    if (noteIds && noteIds.length > 0) {
+      return await this.invoke("notesInfo", 6, { notes: noteIds });
+    }
+    return [];
   }
 
   public async cardsInfo(ids: number[]) {
@@ -152,7 +161,7 @@ export class Anki {
   }
 
   private mergeTags(oldTags: string[], newTags: string[], cardId: number) {
-    const actions = [];
+    const actions: Array<{action: string, params: {notes: number[], tags: string}}> = [];
 
     // Find tags to Add
     for (const tag of newTags) {

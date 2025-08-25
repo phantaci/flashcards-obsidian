@@ -5,6 +5,7 @@
   "inlineID": false,
   "contextSeparator": " > ",
   "deck": "Default",
+  "folderBasedDeck": false,
   "flashcardsTag": "card",
   "inlineSeparator": "::",
   "inlineSeparatorReverse": ":::",

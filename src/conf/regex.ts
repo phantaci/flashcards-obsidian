@@ -25,6 +25,28 @@ export class Regex {
   embedBlock: RegExp;
 
   constructor(settings: ISettings) {
+    // Initialize all properties with default values
+    this.headingsRegex = new RegExp('');
+    this.wikiImageLinks = new RegExp('');
+    this.markdownImageLinks = new RegExp('');
+    this.wikiAudioLinks = new RegExp('');
+    this.obsidianCodeBlock = new RegExp('');
+    this.codeBlock = new RegExp('');
+    this.mathBlock = new RegExp('');
+    this.mathInline = new RegExp('');
+    this.cardsDeckLine = new RegExp('');
+    this.cardsToDelete = new RegExp('');
+    this.globalTagsSplitter = new RegExp('');
+    this.tagHierarchy = new RegExp('');
+    this.flashscardsWithTag = new RegExp('');
+    this.cardsInlineStyle = new RegExp('');
+    this.cardsSpacedStyle = new RegExp('');
+    this.cardsClozeWholeLine = new RegExp('');
+    this.singleClozeCurly = new RegExp('');
+    this.singleClozeHighlight = new RegExp('');
+    this.clozeHighlight = new RegExp('');
+    this.embedBlock = new RegExp('');
+    
     this.update(settings);
   }
 
