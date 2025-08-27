@@ -116,7 +116,8 @@ export class CardsService {
         const [cardsToCreate, cardsToUpdate, cardsNotInAnki] =
           this.filterByUpdate(ankiCards, cards);
         const cardIds: number[] = this.getCardsIds(ankiCards, cards);
-        const cardsToDelete: number[] = this.getCardsToDeleteFromAnki(allCardsInAnkiDeck, cards);
+        const cardsToDeleteInfo = this.getCardsToDeleteFromAnki(allCardsInAnkiDeck, cards);
+        const cardsToDelete: number[] = cardsToDeleteInfo.ids;
 
         console.info("Flashcards: Cards to create");
         console.info(cardsToCreate);
@@ -139,14 +140,24 @@ export class CardsService {
         
         // Add delete notification
         if (cardsToDelete.length > 0) {
-          this.notifications.push(`Deleted successfully ${cardsToDelete.length} cards.`);
+          const deletedCardNames = cardsToDeleteInfo.cards.map((card: any) => {
+            const frontContent = card.fields?.Front?.value || card.fields?.Question?.value || 'Unknown';
+            return this.cleanCardName(frontContent);
+          }).join(', ');
+          
+          this.notifications.push(`Deleted successfully ${cardsToDelete.length} cards: ${deletedCardNames}`);
         }
         const updatedCardIds = await this.updateCardsOnAnki(cardsToUpdate);
         await this.insertCardsOnAnki(cardsToCreate, frontmatter, deckName);
         
         // Add update notification
         if (updatedCardIds.length > 0) {
-          this.notifications.push(`Updated successfully ${updatedCardIds.length} cards.`);
+          const updatedCardNames = cardsToUpdate.map(card => {
+            const frontContent = card.fields?.Front || card.initialContent || 'Unknown';
+            return this.cleanCardName(frontContent);
+          }).join(', ');
+          
+          this.notifications.push(`Updated successfully ${updatedCardIds.length} cards: ${updatedCardNames}`);
         }
 
         // Update decks if needed - since all cards in this file should be in the same deck,
@@ -201,6 +212,21 @@ export class CardsService {
       console.error(err);
       return ['Error: ' + (err instanceof Error ? err.message : 'Unknown error')];
     }
+  }
+
+  private cleanCardName(content: string): string {
+    if (!content) return 'Unknown';
+    
+    return content
+      // Remove HTML tags
+      .replace(/<[^>]*>/g, '')
+      // Remove markdown links [[text]]
+      .replace(/\[\[([^\]]+)\]\]/g, '$1')
+      // Remove markdown formatting
+      .replace(/[*_`]/g, '')
+      // Get only the first part before parentheses or newlines
+      .split(/[(\n]/)[0]
+      .trim();
   }
 
   private async insertMedias(cards: Card[], sourcePath: string): Promise<void> {
@@ -270,8 +296,14 @@ export class CardsService {
       this.writeAnkiBlocks(cardsToCreate);
 
       if (insertedCards > 0) {
+        const successfulCards = cardsToCreate.filter(card => card.id !== null);
+        const cardNames = successfulCards.map(card => {
+          const frontContent = card.fields?.Front || card.initialContent || 'Unknown';
+          return this.cleanCardName(frontContent);
+        }).join(', ');
+        
         this.notifications.push(
-          `Inserted successfully ${insertedCards}/${total} cards.`
+          `Inserted successfully ${insertedCards}/${total} cards: ${cardNames}`
         );
       } else {
         this.notifications.push(
@@ -369,7 +401,7 @@ export class CardsService {
     });
   }
 
-  private getCardsToDeleteFromAnki(fileSourceCards: any[], generatedCards: Card[]): number[] {
+  private getCardsToDeleteFromAnki(fileSourceCards: any[], generatedCards: Card[]): {ids: number[], cards: any[]} {
     // Get all current file card IDs from the file
     const currentFileCardIds = new Set();
     const ankiBlocks = this.parser.getAnkiIDsBlocks(this.file) || [];
@@ -381,10 +413,13 @@ export class CardsService {
     });
     
     // Find cards that exist in Anki for this file but are no longer in the current file
-    return fileSourceCards
-      .filter((card: any) => card.noteId && !currentFileCardIds.has(Number(card.noteId)))
-      .map((card: any) => Number(card.noteId))
-      .filter(id => !isNaN(id));
+    const cardsToDelete = fileSourceCards
+      .filter((card: any) => card.noteId && !currentFileCardIds.has(Number(card.noteId)));
+    
+    return {
+      ids: cardsToDelete.map((card: any) => Number(card.noteId)).filter(id => !isNaN(id)),
+      cards: cardsToDelete
+    };
   }
 
   private filterByUpdate(ankiCards: AnkiCard[], generatedCards: Card[]): [Card[], Card[], Card[]] {
