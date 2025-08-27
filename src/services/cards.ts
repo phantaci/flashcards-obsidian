@@ -57,16 +57,19 @@ export class CardsService {
       this.notifications = [];
       const filePath = activeFile.basename;
       const sourcePath = activeFile.path;
-      console.info("-------- filePath", filePath);
-      console.info("-------- sourcePath", sourcePath);
+      // console.info("-------- filePath", filePath);
+      // console.info("-------- sourcePath", sourcePath);
       let fileCachedMetadata = this.app.metadataCache.getFileCache(activeFile);
       if (!fileCachedMetadata) {
         return ['No metadata found for file'];
       }
       const frontmatter = fileCachedMetadata.frontmatter;
+      // console.info("-------- frontmatter", frontmatter);
       let deckName = "";
-      if (parseFrontMatterEntry(frontmatter, "cards-deck")) {
-        deckName = parseFrontMatterEntry(frontmatter, "cards-deck");
+      let parseDeckName = parseFrontMatterEntry(frontmatter, "cards-deck");
+      // console.info("-------- parseDeckName", parseDeckName);
+      if (parseDeckName) {
+        deckName = parseDeckName;
       } else if (this.settings.folderBasedDeck && activeFile.parent && activeFile.parent.path !== "/") {
         // If the current file is in the path "programming/java/strings.md" then the deck name is "programming::java"
         deckName = activeFile.parent.path.split("/").join("::");
@@ -91,14 +94,11 @@ export class CardsService {
         const ankiBlocksInFile = this.parser.getAnkiIDsBlocks(this.file) || [];
         
         console.info("-------- ankiBlocksInFile", ankiBlocksInFile);
-        console.info("-------- deckName", deckName);
+        // console.info("-------- deckName", deckName);
         // Get all cards from this file's deck to detect deletions
         const allCardsInAnkiDeck = await this.anki.getCardsFromDeck(deckName);
         console.info("-------- allCardsInAnkiDeck", allCardsInAnkiDeck);
-        // const fileSourceCards = allCardsInDeck.filter((card: any) => 
-        //   card.fields && card.fields.Source && card.fields.Source.value.includes(filePath)
-        // );
-        
+
         // Always use fileSourceCards for deletion detection, ankiBlocks only for updates
         const ankiCards = ankiBlocksInFile.length > 0
           ? await this.anki.getCards(this.getAnkiIDs(ankiBlocksInFile))
@@ -149,18 +149,33 @@ export class CardsService {
           this.notifications.push(`Updated successfully ${updatedCardIds.length} cards.`);
         }
 
-        // Update decks if needed - check each Anki card if it needs to be moved to a different deck
-        const cardsToMove = ankiCards
-          .filter((card: AnkiCard) => this.deckNeedToBeChanged(card, deckName) && card.noteId)
-          .map((card: AnkiCard) => card.noteId) as number[];
-      
-        if (cardsToMove.length > 0) {
-          try {
-            await this.anki.changeDeck(cardsToMove, deckName);
-            this.notifications.push("Cards moved to new deck");
-          } catch (error) {
-            console.error('Error moving cards to deck:', error);
-            this.notifications.push("Error: Could not update card decks");
+        // Update decks if needed - since all cards in this file should be in the same deck,
+        // we only need to check if any cards exist and if the current deck differs from target deck
+        if (ankiCards.length > 0) {
+          const noteIds = ankiCards.map((card: AnkiCard) => card.noteId).filter(id => id) as number[];
+          if (noteIds.length > 0) {
+            try {
+              const currentDeck = await this.anki.getCurrentDeckForNotes(noteIds);
+              // console.info("-------- currentDeck", currentDeck);
+              // console.info("-------- targetDeck", deckName);
+              if (currentDeck && currentDeck !== deckName) {
+                // Get all card IDs from the notes to move them
+                const allCardIds: number[] = [];
+                ankiCards.forEach((ankiCard: AnkiCard) => {
+                  if (ankiCard.cards && ankiCard.cards.length > 0) {
+                    allCardIds.push(...ankiCard.cards);
+                  }
+                });
+                console.info("-------- cardIds to move", allCardIds);
+                if (allCardIds.length > 0) {
+                  await this.anki.changeDeck(allCardIds, deckName);
+                  this.notifications.push(`Moved ${allCardIds.length} cards from "${currentDeck}" to "${deckName}"`);
+                }
+              }
+            } catch (error) {
+              console.error('Error moving cards to deck:', error);
+              this.notifications.push("Error: Could not update card decks");
+            }
           }
         }
 
@@ -240,32 +255,41 @@ export class CardsService {
       });
 
       let total = 0;
-        cardsToCreate.forEach((card) => {
-          if (card.id === null) {
-            new Notice(
-              `Error, could not add: '${card.initialContent}'`,
-              noticeTimeout
-            );
-          } else {
-            card.reversed ? (insertedCards += 2) : insertedCards++;
-          }
-          card.reversed ? (total += 2) : total++;
-        });
-
-        if (frontmatter) {
-          this.updateFrontmatter(frontmatter, deckName);
+      cardsToCreate.forEach((card) => {
+        if (card.id === null) {
+          console.warn(`Could not add card: '${card.initialContent}' (possibly duplicate)`);
+        } else {
+          card.reversed ? (insertedCards += 2) : insertedCards++;
         }
-        this.writeAnkiBlocks(cardsToCreate);
+        card.reversed ? (total += 2) : total++;
+      });
 
+      if (frontmatter) {
+        this.updateFrontmatter(frontmatter, deckName);
+      }
+      this.writeAnkiBlocks(cardsToCreate);
+
+      if (insertedCards > 0) {
         this.notifications.push(
           `Inserted successfully ${insertedCards}/${total} cards.`
         );
-        return insertedCards;
-      } catch (err) {
-        console.error(err);
-        throw new Error("Error: Could not write cards on Anki");
+      } else {
+        this.notifications.push(
+          `No new cards created (${total} cards already exist).`
+        );
       }
+      return insertedCards;
+    } catch (err) {
+      console.error('Error in insertCardsOnAnki:', err);
+      // Don't throw error for duplicate cards, just log and continue
+      if (err instanceof Error && err.message.includes('duplicate')) {
+        this.notifications.push('Cards already exist in Anki.');
+        return 0;
+      }
+      this.notifications.push('Error: Could not write cards on Anki');
+      return 0;
     }
+  }
 
   private async updateFrontmatter(frontmatter: FrontMatterCache, deckName: string): Promise<void> {
     if (!frontmatter || !this.file) {
@@ -338,10 +362,6 @@ export class CardsService {
     }
   }
 
-  private deckNeedToBeChanged(ankiCard: AnkiCard, deckName: string): boolean {
-    // Check if deckName exists and is different from the provided deckName
-    return !!(ankiCard?.deckName && ankiCard.deckName !== deckName);
-  }
 
   private getAnkiIDs(blocks: RegExpMatchArray[]): number[] {
     return blocks.map(block => {

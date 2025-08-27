@@ -15,7 +15,7 @@
               "state": {
                 "file": "000 Main.md",
                 "mode": "source",
-                "source": false
+                "source": true
               },
               "icon": "lucide-file",
               "title": "000 Main"

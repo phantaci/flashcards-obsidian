@@ -305,7 +305,15 @@ export class Parser {
     const cards: Inlinecard[] = [];
     const matches = [...file.matchAll(this.regex.cardsInlineStyle)];
 
+    // Filter out frontmatter blocks first
+    const frontmatterBlocks = this.getFrontmatterBlocks(file);
+    
     for (const match of matches) {
+      // Skip if match is within frontmatter
+      if (this.isWithinFrontmatter(match.index, frontmatterBlocks)) {
+        continue;
+      }
+      
       if (
         match[2].toLowerCase().startsWith("cards-deck") ||
         match[2].toLowerCase().startsWith("tags")
@@ -378,6 +386,8 @@ export class Parser {
     const contextAware = this.settings.contextAwareMode;
     const cards: Flashcard[] = [];
     const matches = [...file.matchAll(this.regex.flashscardsWithTag)];
+    // console.info("-------- flashscardsWithTag regex:", this.regex.flashscardsWithTag);
+    console.info("-------- flashscardsWithTag matches count:", matches.length);
 
     const embedMap = this.getEmbedMap();
 
@@ -414,6 +424,8 @@ export class Parser {
       const tags: string[] = this.parseTags(match[4], globalTags);
       const id: number = match[6] ? Number(match[6]) : -1;
       const inserted: boolean = match[6] ? true : false;
+      // console.info("-------- match groups:", match);
+      console.info("-------- id:", id, "inserted:", inserted);
       const fields: any = { Front: question, Back: answer };
       if (this.settings.sourceSupport) {
         fields["Source"] = note;
@@ -453,6 +465,27 @@ export class Parser {
     return [...file.matchAll(this.regex.cardsToDelete)].map((match) => {
       return Number(match[1]);
     });
+  }
+
+  private getFrontmatterBlocks(file: string): Array<{start: number, end: number}> {
+    const frontmatterBlocks: Array<{start: number, end: number}> = [];
+    const frontmatterRegex = /^---[\s\S]*?^---/gm;
+    let match;
+    
+    while ((match = frontmatterRegex.exec(file)) !== null) {
+      frontmatterBlocks.push({
+        start: match.index,
+        end: match.index + match[0].length
+      });
+    }
+    
+    return frontmatterBlocks;
+  }
+
+  private isWithinFrontmatter(matchIndex: number, frontmatterBlocks: Array<{start: number, end: number}>): boolean {
+    return frontmatterBlocks.some(block => 
+      matchIndex >= block.start && matchIndex < block.end
+    );
   }
 
   private parseLine(str: string, vaultName: string) {

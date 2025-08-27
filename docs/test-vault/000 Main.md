@@ -1,3 +1,7 @@
+---
+cards-deck: Default::Test
+---
+
 This is the test vault. 
 
 WORK IN PROGRESS

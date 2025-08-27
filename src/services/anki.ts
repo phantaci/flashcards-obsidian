@@ -152,6 +152,26 @@ export class Anki {
     return await this.invoke("notesInfo", 6, { notes: ids });
   }
 
+  public async getCurrentDeckForNotes(noteIds: number[]): Promise<string | null> {
+    if (noteIds.length === 0) {
+      return null;
+    }
+    
+    // Get the first note's cards to determine current deck
+    const notes = await this.invoke("notesInfo", 6, { notes: [noteIds[0]] });
+    if (!notes || notes.length === 0 || !notes[0].cards || notes[0].cards.length === 0) {
+      return null;
+    }
+    
+    // Get deck info for the first card (all cards in file should be in same deck)
+    const cardsInfo = await this.invoke("cardsInfo", 6, { cards: [notes[0].cards[0]] });
+    if (!cardsInfo || cardsInfo.length === 0) {
+      return null;
+    }
+    
+    return cardsInfo[0].deckName;
+  }
+
   public async deleteCards(ids: number[]) {
     return this.invoke("deleteNotes", 6, { notes: ids });
   }

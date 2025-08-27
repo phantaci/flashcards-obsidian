@@ -80,12 +80,13 @@ export class Regex {
     this.tagHierarchy = /\//gm;
 
     // Cards
-    const flags = "gimu";
+    const flags = "gims"; // Added 's' flag for . to match newlines
     // https://regex101.com/r/p3yQwY/2
+    // Support inline format: question\n#card answer\n...content...\n^ID
     let str =
       "( {0,3}[#]*)((?:[^\\n]\\n?)+?)(#" +
       settings.flashcardsTag +
-      "(?:[/-]reverse)?)((?: *#[\\p{Number}\\p{Letter}\\-\\/_]+)*) *?\\n+((?:[^\\n]\\n?)*?(?=\\^\\d{13}|$))(?:\\^(\\d{13}))?";
+      "(?:[/-]reverse)?)((?: *#[\\p{Number}\\p{Letter}\\-\\/_]+)*) *([\\s\\S]*?)\\^(\\d{13})";
     this.flashscardsWithTag = new RegExp(str, flags);
 
     // https://regex101.com/r/8wmOo8/1
@@ -93,6 +94,7 @@ export class Regex {
     const sepShortest = settings.inlineSeparator.length < settings.inlineSeparatorReverse.length ? settings.inlineSeparator : settings.inlineSeparatorReverse;
     // sepLongest is the longest between the inlineSeparator and the inlineSeparatorReverse because if the order is ::|::: then always the first will be matched
     // sepShortest is the shortest
+    // Reverted to original regex - frontmatter filtering is now handled in parser
     if (settings.inlineID) {
       str =
         "( {0,3}[#]{0,6})?(?:(?:[\\t ]*)(?:\\d.|[-+*]|#{1,6}))?(.+?) ?(" + sepLongest + "|" + sepShortest + ") ?(.+?)((?: *#[\\p{Letter}\\-\\/_]+)+)?(?:\\s+\\^(\\d{13})|$)";
